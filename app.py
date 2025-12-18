@@ -29,7 +29,7 @@ INDUSTRY_CONFIG = {
         "colunas": ['CATEGORIA', 'SUBCATEGORIA', 'SEGMENTO', 'EMBALAGEM', 'INTERVALO EMBALAGEM', 'TAMANHO EMBALAGEM', 'FORMATO EMBALAGEM', 'MARCA MNB', 'CODIGO MNB', 'Prod Clasif 10']
     },
     "SÃO GERALDO": {
-        "arquivo": "dicionario_sao_geraldo.xlsx",
+        "arquivo": "dicionario_cajuina.xlsx",  # <--- AJUSTADO CONFORME SUA IMAGEM
         "colunas": ['TIPO', 'CONSUMO', 'SABOR', 'EMBALAGEM', 'SEM ACUCAR', 'GRAMATURA CSG']
     },
     "M.DIAS BRANCO": {
