@@ -198,6 +198,7 @@ if file_sku and df_dict is not None:
     df_sku = ler_arquivo_robusto(file_sku)
     
     if df_sku is not None:
+        df_sku.columns = df_sku.columns.str.strip()
         if 'Nome SKU' not in df_sku.columns:
             st.error("❌ A planilha deve conter a coluna 'Nome SKU'.")
         else:
@@ -237,3 +238,4 @@ if file_sku and df_dict is not None:
                         col2.info("Nenhuma alteração realizada.")
                 else:
                     st.error("O arquivo de regras está vazio ou inválido.")
+
