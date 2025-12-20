@@ -5,40 +5,67 @@ import io
 import os
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="Classificador Multi-Indústria", layout="wide", page_icon="🏭")
+st.set_page_config(page_title="Classificador Multi-Indústria V2", layout="wide", page_icon="🏭")
 
 # --- CONFIGURAÇÃO DE PASTAS ---
 PASTA_DICIONARIOS = "dicionarios"
 
-# --- CONFIGURAÇÃO DAS INDÚSTRIAS ---
+# --- CONFIGURAÇÃO DAS INDÚSTRIAS (ESTRUTURA HIERÁRQUICA) ---
 INDUSTRY_CONFIG = {
-    "FROSTY": {
-        "arquivo": "dicionario_frosty.xlsx",
-        "colunas": ['SUBCATEGORIA', 'SABOR', 'UNIDADE DE MEDIDA', 'Restritivos', 'AÇÚCAR']
+    "M.DIAS BRANCO": {
+        "colunas": [
+            'Categoría SKU', 'Familia', 'SubFamilia', 'Marca', 'SubMarca', 
+            'Gramatura MDB', 'SubCategoria MDB', 'CLASSIFICAÇÃO DO ITEM', 'Unidade de Medida'
+        ],
+        "arquivos": {
+            "Aveia": "dicionario_mdias_aveia.xlsx",
+            "Biscoitos": "dicionario_mdias_biscoitos.xlsx",
+            "Granola": "dicionario_mdias_granola.xlsx",
+            "Massas Instantâneas": "dicionario_mdias_massa_inst.xlsx",
+            "Massas Alimentícias": "dicionario_mdias_massas_alim.xlsx",
+            "Pão": "dicionario_mdias_pao.xlsx"
+        }
     },
     "ALVOAR / BETANIA": {
-        "arquivo": "dicionario_alvoar.xlsx",
-        "colunas": ['Categoria', 'Subcategoria', 'Sabor', 'Gramatura', 'Embalagem', 'Marca', 'Frio Seco', 'Kids', 'Linha', 'Zero Lactose']
+        "colunas": [
+            'Categoria', 'Subcategoria', 'Sabor', 'Gramatura', 
+            'Embalagem', 'Marca', 'Frio Seco', 'Kids', 'Linha', 'Zero Lactose'
+        ],
+        "arquivos": {
+            "Coalhada": "dicionario_alvoar_coalhada.xlsx",
+            "Cream Cheese": "dicionario_alvoar_cream_cheese.xlsx",
+            "Iogurte": "dicionario_alvoar_iogurte.xlsx",
+            "Leite Sabor": "dicionario_alvoar_leite_sabor.xlsx",
+            "Queijos": "dicionario_alvoar_queijos.xlsx"
+        }
+    },
+    "FROSTY": {
+        "colunas": ['SUBCATEGORIA', 'SABOR', 'UNIDADE DE MEDIDA', 'Restritivos', 'AÇÚCAR'],
+        "arquivos": {
+            "Total": "dicionario_frosty.xlsx"
+        }
     },
     "AVINE": {
-        "arquivo": "dicionario_avine.xlsx",
-        "colunas": ['FAMÍLIA DE VENDAS', 'COR', 'TIPO', 'TAMANHO', 'BANDEJA', 'CONCATENADO', 'PERFIL']
+        "colunas": ['FAMÍLIA DE VENDAS', 'COR', 'TIPO', 'TAMANHO', 'BANDEJA', 'CONCATENADO', 'PERFIL'],
+        "arquivos": {
+            "Total": "dicionario_avine.xlsx"
+        }
     },
     "MINALBA": {
-        "arquivo": "dicionario_minalba.xlsx",
-        "colunas": ['CATEGORIA', 'SUBCATEGORIA', 'SEGMENTO', 'EMBALAGEM', 'INTERVALO EMBALAGEM', 'TAMANHO EMBALAGEM', 'FORMATO EMBALAGEM', 'MARCA MNB', 'CODIGO MNB', 'Prod Clasif 10']
+        "colunas": ['CATEGORIA', 'SUBCATEGORIA', 'SEGMENTO', 'EMBALAGEM', 'INTERVALO EMBALAGEM', 'TAMANHO EMBALAGEM', 'FORMATO EMBALAGEM', 'MARCA MNB', 'CODIGO MNB', 'Prod Clasif 10'],
+        "arquivos": {
+            "Total": "dicionario_minalba.xlsx"
+        }
     },
-    "SÃO GERALDO": {
-        "arquivo": "dicionario_cajuina.xlsx",  # <--- AJUSTADO CONFORME SUA IMAGEM
-        "colunas": ['TIPO', 'CONSUMO', 'SABOR', 'EMBALAGEM', 'SEM ACUCAR', 'GRAMATURA CSG']
-    },
-    "M.DIAS BRANCO": {
-        "arquivo": "dicionario_mdias.xlsx",
-        "colunas": ['SubCategoria MDB', 'Gramatura MDB', 'CLASSIFICAÇÃO DO ITEM', 'Marca', 'Familia', 'SubFamilia', 'SubMarca', 'Unidade de Medida']
+    "SÃO GERALDO (CAJUINA)": {
+        "colunas": ['TIPO', 'CONSUMO', 'SABOR', 'EMBALAGEM', 'SEM ACUCAR', 'GRAMATURA CSG'],
+        "arquivos": {
+            "Total": "dicionario_cajuina.xlsx"
+        }
     }
 }
 
-# --- FUNÇÃO DE LEITURA BLINDADA (PARA O UPLOAD DO USUÁRIO) ---
+# --- FUNÇÃO DE LEITURA BLINDADA ---
 def ler_arquivo_robusto(uploaded_file):
     """Lê Excel ou CSV do usuário detectando encoding"""
     filename = uploaded_file.name.lower()
@@ -76,11 +103,9 @@ def ler_arquivo_robusto(uploaded_file):
                 return None
     return None
 
-# --- CARREGAMENTO DO DICIONÁRIO (AGORA NA PASTA CORRETA) ---
+# --- CARREGAMENTO DO DICIONÁRIO ---
 def carregar_dicionario_industria(nome_arquivo):
     """Carrega o dicionário buscando dentro da pasta 'dicionarios'"""
-    
-    # Monta o caminho completo: dicionarios/arquivo.xlsx
     caminho_completo = os.path.join(PASTA_DICIONARIOS, nome_arquivo)
     
     if not os.path.exists(caminho_completo):
@@ -88,6 +113,9 @@ def carregar_dicionario_industria(nome_arquivo):
     
     try:
         df = pd.read_excel(caminho_completo)
+        # Limpeza de segurança: remove linhas vazias
+        df = df.dropna(subset=['Valor da Regra'])
+        df = df[df['Valor da Regra'].astype(str).str.strip() != '']
         return df, None
     except Exception as e:
         return None, f"Erro ao ler o arquivo {nome_arquivo}: {e}"
@@ -171,28 +199,37 @@ def processar_dataframe(df_sku, regras_otimizadas, config_industria):
     return df_processado, pd.DataFrame(comparativo_data)
 
 # --- INTERFACE ---
-st.title("🏭 Classificador Multi-Indústria")
+st.title("🏭 Classificador Multi-Indústria (Fragmentado)")
 
 with st.sidebar:
-    st.header("1. Selecione a Indústria")
-    opcao_industria = st.selectbox("Indústria:", list(INDUSTRY_CONFIG.keys()))
+    st.header("Configuração")
     
-    config = INDUSTRY_CONFIG[opcao_industria]
-    nome_arquivo_regras = config['arquivo']
+    # 1. Seleciona a Indústria
+    opcao_industria = st.selectbox("1. Selecione a Indústria:", list(INDUSTRY_CONFIG.keys()))
+    config_ind = INDUSTRY_CONFIG[opcao_industria]
     
-    # Verifica status
+    # 2. Seleciona a Categoria (Preenche com 'Total' se não houver fragmentação)
+    opcoes_categorias = list(config_ind['arquivos'].keys())
+    opcao_categoria = st.selectbox("2. Selecione a Categoria:", opcoes_categorias)
+    
+    # Recupera o arquivo correto baseado na escolha
+    nome_arquivo_regras = config_ind['arquivos'][opcao_categoria]
+    
+    st.info(f"📁 Usando dicionário: `{nome_arquivo_regras}`")
+    
+    # Carrega e valida
     df_dict, erro_dict = carregar_dicionario_industria(nome_arquivo_regras)
     
     status_container = st.container()
     if erro_dict:
-        status_container.error(f"❌ Arquivo não encontrado na pasta 'dicionarios'")
-        st.caption(f"Esperado: `dicionarios/{nome_arquivo_regras}`")
+        status_container.error("❌ Erro no carregamento")
+        st.caption(erro_dict)
         df_dict = None
     else:
-        status_container.success(f"✅ Regras carregadas: {len(df_dict)}")
+        status_container.success(f"✅ {len(df_dict)} regras carregadas")
 
-st.write("### 2. Upload da Base de SKUs")
-file_sku = st.file_uploader("Carregue a planilha 'Cadastro SKU'", type=['xlsx', 'csv', 'xls'])
+st.write("### 3. Upload da Base de SKUs")
+file_sku = st.file_uploader(f"Carregue a planilha para classificar ({opcao_industria} - {opcao_categoria})", type=['xlsx', 'csv', 'xls'])
 
 if file_sku and df_dict is not None:
     df_sku = ler_arquivo_robusto(file_sku)
@@ -210,8 +247,8 @@ if file_sku and df_dict is not None:
                 regras_prontas = otimizar_regras(df_dict)
                 
                 if regras_prontas:
-                    with st.spinner(f"Processando regras para {opcao_industria}..."):
-                        df_final, df_comp = processar_dataframe(df_sku, regras_prontas, config)
+                    with st.spinner(f"Processando regras de {opcao_categoria}..."):
+                        df_final, df_comp = processar_dataframe(df_sku, regras_prontas, config_ind)
                     
                     st.success("Processamento concluído!")
                     
@@ -221,9 +258,11 @@ if file_sku and df_dict is not None:
                     with pd.ExcelWriter(buffer_final, engine='xlsxwriter') as writer:
                         df_final.to_excel(writer, index=False)
                         
-                    col1.download_button("📥 Baixar Classificados (.xlsx)", 
+                    nome_download = f"Classificados_{opcao_industria}_{opcao_categoria}.xlsx".replace(" ", "_")
+                    
+                    col1.download_button("📥 Baixar Classificados", 
                                        data=buffer_final.getvalue(), 
-                                       file_name=f"Classificados_{opcao_industria}.xlsx",
+                                       file_name=nome_download,
                                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                     
                     if not df_comp.empty:
@@ -238,4 +277,3 @@ if file_sku and df_dict is not None:
                         col2.info("Nenhuma alteração realizada.")
                 else:
                     st.error("O arquivo de regras está vazio ou inválido.")
-
