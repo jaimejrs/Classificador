@@ -42,7 +42,11 @@ INDUSTRY_CONFIG = {
     "FROSTY": {
         "colunas": ['SUBCATEGORIA', 'SABOR', 'UNIDADE DE MEDIDA', 'Restritivos', 'AÇÚCAR'],
         "arquivos": {
-            "Total": "dicionario_frosty.xlsx"
+            "Sorvete Massa": "dicionario_frosty_sorvete_massa.xlsx",
+            "Sorvete Palito": "dicionario_frosty_sorvete_palito.xlsx",
+            "Açaí": "dicionario_frosty_acai.xlsx",
+            "Polpa de Frutas": "dicionario_frosty_polpa_frutas.xlsx",
+            "Gelo Saborizado": "dicionario_frosty_gelo_saborizado.xlsx"
         }
     },
     "AVINE": {
@@ -277,3 +281,4 @@ if file_sku and df_dict is not None:
                         col2.info("Nenhuma alteração realizada.")
                 else:
                     st.error("O arquivo de regras está vazio ou inválido.")
+
