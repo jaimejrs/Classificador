@@ -1,0 +1,23 @@
+[theme]
+# Cor primária: Usada em botões, no slider e em elementos focados.
+# Usaremos o seu Azul Profundo.
+primaryColor = "#FFFFFF"
+
+# Cor de fundo da aplicação principal.
+# Recomendação: Manter branco puro para melhor legibilidade de dados.
+backgroundColor = "#9DB7DD"
+
+# Cor de fundo da barra lateral (Sidebar).
+# Usaremos o seu Azul Claro para destacar essa área.
+secondaryBackgroundColor = "#FFFFFF"
+
+# Cor do texto padrão.
+# Usaremos preto ou um cinza muito escuro para contraste máximo contra o fundo branco.
+textColor = "#262730"
+
+# Fonte padrão (opcional, 'sans serif' é moderno e limpo)
+font = "sans serif"
+
+[server]
+# Opcional: esconde o menu "hambúrguer" do canto superior direito se desejar
+headless = true
