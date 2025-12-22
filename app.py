@@ -104,6 +104,30 @@ st.markdown(
             background-color: #014597 !important;
             color: #FFFFFF !important;
         }
+        
+        /* Badges para Colunas */
+        .badge-found {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-right: 5px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
+        .badge-missing {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-right: 5px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -489,8 +513,6 @@ def main():
 
             # Botão de Classificar
             if file_sku_class:
-                # Resetar estado se o usuário subir arquivo novo
-                # (Lógica simples: se apertar o botão, reprocessa e atualiza estado)
                 if st.button("🚀 Classificar", type="primary", key="btn_class"):
                     df_sku = ler_arquivo_robusto(file_sku_class)
                     if df_sku is not None:
@@ -503,18 +525,16 @@ def main():
                                 with st.spinner("Classificando..."):
                                     df_final, df_comp = processar_dataframe_classificador(df_sku, regras, config_class)
                                 
-                                # SALVA NO ESTADO
                                 st.session_state['class_df_final'] = df_final
                                 st.session_state['class_df_comp'] = df_comp
                                 st.session_state['class_concluido'] = True
-                                st.rerun() # Recarrega para mostrar os resultados abaixo
+                                st.rerun()
 
             # EXIBIÇÃO PERSISTENTE DOS RESULTADOS
             if st.session_state['class_concluido'] and st.session_state['class_df_final'] is not None:
                 st.success("Processamento Concluído!")
                 c1, c2 = st.columns(2)
                 
-                # Nomes de arquivo com Data
                 data_hoje = get_data_atual_str()
                 nome_base_out = f"Classificados_{ind_class}_{cat_class}".replace(" ", "_").replace("/", "-")
                 nome_final_out = f"{nome_base_out}_{data_hoje}.xlsx"
@@ -566,13 +586,62 @@ def main():
 
         files_ext = st.file_uploader("2. Carregue os arquivos Excel:", accept_multiple_files=True, type=["xlsx"], key="up_ext")
 
+        # ---------------------------------------------
+        #  NOVO: PRÉ-VISUALIZAÇÃO DE ARQUIVO
+        # ---------------------------------------------
+        if files_ext:
+            st.divider()
+            with st.expander("🔍 Pré-visualização e Diagnóstico de Colunas (Clique para abrir)", expanded=True):
+                file_names = [f.name for f in files_ext]
+                selected_file_name = st.selectbox("Selecione um arquivo para inspecionar:", file_names)
+                
+                selected_file = next(f for f in files_ext if f.name == selected_file_name)
+                
+                # Ler arquivo para preview
+                df_preview = ler_arquivo_robusto(selected_file)
+                
+                # IMPORTANTE: Rebobinar o arquivo para que ele possa ser lido novamente no processamento
+                selected_file.seek(0)
+                
+                if df_preview is not None:
+                    # Limpeza básica nas colunas para o diagnóstico bater com o processamento
+                    df_preview = clean_column_names(df_preview)
+                    
+                    colunas_encontradas = set(df_preview.columns)
+                    colunas_esperadas = set([config_ext['sku_origem']] + config_ext['colunas_atributos'])
+                    
+                    cols_ok = colunas_esperadas.intersection(colunas_encontradas)
+                    cols_missing = colunas_esperadas - colunas_encontradas
+                    
+                    st.markdown("##### Diagnóstico de Colunas")
+                    
+                    # Exibição visual das colunas
+                    html_cols = ""
+                    for col in sorted(list(cols_ok)):
+                        html_cols += f'<span class="badge-found">✅ {col}</span>'
+                    for col in sorted(list(cols_missing)):
+                        html_cols += f'<span class="badge-missing">❌ {col}</span>'
+                    
+                    st.markdown(html_cols, unsafe_allow_html=True)
+                    
+                    if cols_missing:
+                        st.warning(f"Atenção: Este arquivo não possui {len(cols_missing)} colunas esperadas pela configuração.")
+                    else:
+                        st.success("Todas as colunas esperadas foram encontradas!")
+
+                    st.markdown("##### Amostra de Dados (5 primeiras linhas)")
+                    st.dataframe(df_preview.head(), use_container_width=True)
+                else:
+                    st.error("Não foi possível ler este arquivo para pré-visualização.")
+            st.divider()
+
         if files_ext:
             if st.button("🚀 Processar Arquivos", key="btn_ext_proc"):
                 # Reset
                 st.session_state['ext_arquivos'] = {}
                 st.session_state['ext_erros'] = []
                 st.session_state['ext_ignorado'] = []
-                st.session_state['ext_concluido'] = False
+                st.session_state['ext_concluida'] = False
                 
                 df_final_ext, conflitos_ext, debug_ext = processar_arquivos_extrator(files_ext, config_ext)
 
