@@ -5,6 +5,7 @@ import io
 import os
 import numpy as np
 from PIL import Image
+from datetime import datetime
 
 # ==============================================================================
 # 1. CONFIGURAÇÃO VISUAL E PÁGINA
@@ -29,7 +30,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# CSS (Estética Visual Corrigida)
+# CSS (Estética Visual)
 st.markdown(
     """
     <style>
@@ -48,31 +49,30 @@ st.markdown(
             color: #014597; /* Azul Escuro */
         }
 
-        /* --- CORREÇÃO DOS BOTÕES --- */
-        
-        /* 1. Botões de Download (Fundo Branco, Texto Azul) */
+        /* Botões de Download */
         div.stDownloadButton > button {
             color: #004BDE !important;
             border-color: #004BDE !important;
             background-color: #FFFFFF !important; 
         }
+        
         div.stDownloadButton > button:hover {
             color: #FFFFFF !important;
             background-color: #004BDE !important;
+            border-color: #004BDE !important;
         }
 
-        /* 2. Botões de Ação - Classificar/Processar (Fundo Azul, Texto Branco) */
+        /* Botões de Ação - Classificar/Processar */
         div.stButton > button {
             color: #FFFFFF !important;
             background-color: #004BDE !important;
             border-color: #004BDE !important;
         }
         div.stButton > button:hover {
-            background-color: #003AA6 !important; /* Azul mais escuro no hover */
+            background-color: #003AA6 !important;
             border-color: #003AA6 !important;
             color: #FFFFFF !important;
         }
-        /* Foco no texto interno do botão para garantir contraste */
         div.stButton > button p {
             color: #FFFFFF !important;
         }
@@ -222,6 +222,10 @@ SKU_PADRAO_FINAL = "Código Barras SKU"
 # ==============================================================================
 # 3. FUNÇÕES UTILITÁRIAS COMUNS
 # ==============================================================================
+
+def get_data_atual_str():
+    """Retorna data atual formatada para nome de arquivo (dd-mm-yyyy)."""
+    return datetime.now().strftime("%d-%m-%Y")
 
 def ler_arquivo_robusto(uploaded_file):
     """Lê Excel ou CSV do usuário detectando encoding."""
@@ -454,6 +458,11 @@ def main():
         st.header("Classificação por Dicionários")
         st.caption("Utilize dicionários de regras (Regex) para preencher atributos automaticamente.")
 
+        # --- SESSION STATE ABA 1 ---
+        if 'class_concluido' not in st.session_state: st.session_state['class_concluido'] = False
+        if 'class_df_final' not in st.session_state: st.session_state['class_df_final'] = None
+        if 'class_df_comp' not in st.session_state: st.session_state['class_df_comp'] = None
+
         col_ind, col_cat = st.columns(2)
         with col_ind:
             ind_class = st.selectbox("1. Indústria:", list(CONFIG_CLASSIFICADOR.keys()), key="sb_ind_class")
@@ -478,37 +487,61 @@ def main():
             st.markdown("### 3. Upload da Base")
             file_sku_class = st.file_uploader(f"Base de SKUs ({ind_class} - {cat_class})", type=['xlsx', 'csv', 'xls'], key="up_class")
 
+            # Botão de Classificar
             if file_sku_class:
-                df_sku = ler_arquivo_robusto(file_sku_class)
-                if df_sku is not None:
-                    df_sku.columns = df_sku.columns.str.strip()
-                    if 'Nome SKU' not in df_sku.columns:
-                        st.error("❌ A planilha deve conter a coluna 'Nome SKU'.")
-                    else:
-                        st.success("Base carregada!")
-                        
-                        if st.button("🚀 Classificar", type="primary", key="btn_class"):
+                # Resetar estado se o usuário subir arquivo novo
+                # (Lógica simples: se apertar o botão, reprocessa e atualiza estado)
+                if st.button("🚀 Classificar", type="primary", key="btn_class"):
+                    df_sku = ler_arquivo_robusto(file_sku_class)
+                    if df_sku is not None:
+                        df_sku.columns = df_sku.columns.str.strip()
+                        if 'Nome SKU' not in df_sku.columns:
+                            st.error("❌ A planilha deve conter a coluna 'Nome SKU'.")
+                        else:
                             regras = otimizar_regras(df_dict)
                             if regras:
                                 with st.spinner("Classificando..."):
                                     df_final, df_comp = processar_dataframe_classificador(df_sku, regras, config_class)
                                 
-                                st.success("Concluído!")
-                                c1, c2 = st.columns(2)
-                                
-                                nome_out = f"Classificados_{ind_class}_{cat_class}.xlsx".replace(" ", "_").replace("/", "-")
-                                c1.download_button("📥 Baixar Classificados", 
-                                                   data=to_excel_bytes(df_final), 
-                                                   file_name=nome_out,
-                                                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                                
-                                if not df_comp.empty:
-                                    c2.download_button("📊 Relatório de Mudanças", 
-                                                       data=to_excel_bytes(df_comp), 
-                                                       file_name="Mudancas.xlsx",
-                                                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-                                else:
-                                    c2.info("Sem alterações.")
+                                # SALVA NO ESTADO
+                                st.session_state['class_df_final'] = df_final
+                                st.session_state['class_df_comp'] = df_comp
+                                st.session_state['class_concluido'] = True
+                                st.rerun() # Recarrega para mostrar os resultados abaixo
+
+            # EXIBIÇÃO PERSISTENTE DOS RESULTADOS
+            if st.session_state['class_concluido'] and st.session_state['class_df_final'] is not None:
+                st.success("Processamento Concluído!")
+                c1, c2 = st.columns(2)
+                
+                # Nomes de arquivo com Data
+                data_hoje = get_data_atual_str()
+                nome_base_out = f"Classificados_{ind_class}_{cat_class}".replace(" ", "_").replace("/", "-")
+                nome_final_out = f"{nome_base_out}_{data_hoje}.xlsx"
+                nome_mudancas_out = f"Mudancas_{data_hoje}.xlsx"
+
+                c1.download_button(
+                    "📥 Baixar Classificados", 
+                    data=to_excel_bytes(st.session_state['class_df_final']), 
+                    file_name=nome_final_out,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+                
+                if not st.session_state['class_df_comp'].empty:
+                    c2.download_button(
+                        "📊 Relatório de Mudanças", 
+                        data=to_excel_bytes(st.session_state['class_df_comp']), 
+                        file_name=nome_mudancas_out,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    )
+                else:
+                    c2.info("Sem alterações.")
+                
+                if st.button("🔄 Limpar Classificador", key="limpar_class"):
+                    st.session_state['class_concluido'] = False
+                    st.session_state['class_df_final'] = None
+                    st.session_state['class_df_comp'] = None
+                    st.rerun()
 
     # -------------------------------------------------------------------------
     # ABA 2: EXTRATOR (Lógica de Fragmentação)
@@ -539,7 +572,7 @@ def main():
                 st.session_state['ext_arquivos'] = {}
                 st.session_state['ext_erros'] = []
                 st.session_state['ext_ignorado'] = []
-                st.session_state['ext_concluida'] = False
+                st.session_state['ext_concluido'] = False
                 
                 df_final_ext, conflitos_ext, debug_ext = processar_arquivos_extrator(files_ext, config_ext)
 
@@ -554,8 +587,10 @@ def main():
                     arquivos_out = {}
                     relatorio_skip = []
 
-                    # Mestre
-                    arquivos_out["Mestre_Completo_Geral.xlsx"] = df_final_ext
+                    # Mestre com DATA
+                    data_hoje = get_data_atual_str()
+                    nome_mestre = f"Mestre_Completo_{data_hoje}.xlsx"
+                    arquivos_out[nome_mestre] = df_final_ext
                     
                     # Fragmentar
                     for col in config_ext["colunas_atributos"]:
@@ -605,11 +640,16 @@ def main():
             st.subheader("Downloads")
             arquivos = st.session_state['ext_arquivos']
             
-            # Mestre
-            if "Mestre_Completo_Geral.xlsx" in arquivos:
-                st.download_button("📦 Baixar Mestre Consolidado", 
-                                   data=to_excel_bytes(arquivos["Mestre_Completo_Geral.xlsx"]), 
-                                   file_name="Mestre_Completo.xlsx", key="dl_mestre")
+            # Mestre (Busca dinâmica pelo nome com data)
+            mestre_key = next((k for k in arquivos.keys() if "Mestre_Completo" in k), None)
+            
+            if mestre_key:
+                st.download_button(
+                    "📦 Baixar Mestre Consolidado", 
+                    data=to_excel_bytes(arquivos[mestre_key]), 
+                    file_name=mestre_key, 
+                    key="dl_mestre"
+                )
             
             st.markdown("#### Planilhas Fragmentadas")
             cols_layout = st.columns(2)
