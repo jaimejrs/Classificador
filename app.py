@@ -128,6 +128,17 @@ st.markdown(
             display: inline-block;
             margin-bottom: 5px;
         }
+        .badge-info {
+            background-color: #e2e3e5;
+            color: #383d41;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-right: 5px;
+            display: inline-block;
+            margin-bottom: 5px;
+        }
     </style>
     """,
     unsafe_allow_html=True,
@@ -511,6 +522,46 @@ def main():
             st.markdown("### 3. Upload da Base")
             file_sku_class = st.file_uploader(f"Base de SKUs ({ind_class} - {cat_class})", type=['xlsx', 'csv', 'xls'], key="up_class")
 
+            # ---------------------------------------------
+            #  NOVO: PRÉ-VISUALIZAÇÃO (ABA CLASSIFICADOR)
+            # ---------------------------------------------
+            if file_sku_class:
+                st.divider()
+                with st.expander("🔍 Pré-visualização e Diagnóstico (Clique para abrir)", expanded=True):
+                    # Ler arquivo para preview
+                    df_preview = ler_arquivo_robusto(file_sku_class)
+                    file_sku_class.seek(0) # IMPORTANTE: Rebobinar
+
+                    if df_preview is not None:
+                        df_preview = clean_column_names(df_preview)
+                        cols_found = set(df_preview.columns)
+                        
+                        st.markdown("##### Diagnóstico de Colunas")
+                        # Verifica apenas a coluna mandatória para classificar
+                        if 'Nome SKU' in cols_found:
+                            st.markdown('<span class="badge-found">✅ Coluna Obrigatória: Nome SKU</span>', unsafe_allow_html=True)
+                        else:
+                            st.markdown('<span class="badge-missing">❌ Faltando: Nome SKU</span>', unsafe_allow_html=True)
+                            st.error("ERRO: O arquivo precisa ter uma coluna chamada 'Nome SKU' para o classificador funcionar.")
+
+                        # Informa as outras colunas encontradas
+                        other_cols = cols_found - {'Nome SKU'}
+                        if other_cols:
+                            html_others = ""
+                            for c in list(other_cols)[:5]: # Mostra só as 5 primeiras para não poluir
+                                html_others += f'<span class="badge-info">{c}</span>'
+                            if len(other_cols) > 5:
+                                html_others += f'<span class="badge-info">... e mais {len(other_cols)-5}</span>'
+                            
+                            st.markdown("**Outras colunas encontradas:**")
+                            st.markdown(html_others, unsafe_allow_html=True)
+
+                        st.markdown("##### Amostra de Dados")
+                        st.dataframe(df_preview.head(), use_container_width=True)
+                    else:
+                        st.error("Erro ao ler o arquivo para pré-visualização.")
+                st.divider()
+
             # Botão de Classificar
             if file_sku_class:
                 if st.button("🚀 Classificar", type="primary", key="btn_class"):
@@ -587,7 +638,7 @@ def main():
         files_ext = st.file_uploader("2. Carregue os arquivos Excel:", accept_multiple_files=True, type=["xlsx"], key="up_ext")
 
         # ---------------------------------------------
-        #  NOVO: PRÉ-VISUALIZAÇÃO DE ARQUIVO
+        #  PRÉ-VISUALIZAÇÃO (ABA EXTRATOR)
         # ---------------------------------------------
         if files_ext:
             st.divider()
@@ -599,12 +650,9 @@ def main():
                 
                 # Ler arquivo para preview
                 df_preview = ler_arquivo_robusto(selected_file)
-                
-                # IMPORTANTE: Rebobinar o arquivo para que ele possa ser lido novamente no processamento
-                selected_file.seek(0)
+                selected_file.seek(0) # IMPORTANTE: Rebobinar
                 
                 if df_preview is not None:
-                    # Limpeza básica nas colunas para o diagnóstico bater com o processamento
                     df_preview = clean_column_names(df_preview)
                     
                     colunas_encontradas = set(df_preview.columns)
@@ -615,7 +663,6 @@ def main():
                     
                     st.markdown("##### Diagnóstico de Colunas")
                     
-                    # Exibição visual das colunas
                     html_cols = ""
                     for col in sorted(list(cols_ok)):
                         html_cols += f'<span class="badge-found">✅ {col}</span>'
