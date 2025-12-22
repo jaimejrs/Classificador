@@ -510,6 +510,68 @@ def processar_arquivos_extrator(files, config_industria):
     return df_consolidado, skus_conflitantes, debug_missing_cols
 
 # ==============================================================================
+# 7. FUNÇÃO DE ESTATÍSTICAS (NOVA)
+# ==============================================================================
+
+def exibir_resumo_estatistico(df, colunas_alvo):
+    """Gera dashboards visuais sobre o resultado da classificação."""
+    
+    st.markdown("### 📊 Estatísticas do Processamento")
+    
+    total_skus = len(df)
+    
+    # Métricas Globais
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Total de SKUs", total_skus)
+    
+    # Cálculo total de preenchimento
+    total_celulas = total_skus * len(colunas_alvo)
+    celulas_preenchidas = df[colunas_alvo].notna().sum().sum()
+    perc_global = (celulas_preenchidas / total_celulas) * 100 if total_celulas > 0 else 0
+    
+    c2.metric("Classificações Realizadas", f"{celulas_preenchidas}")
+    c3.metric("Cobertura Global", f"{perc_global:.1f}%")
+    
+    st.divider()
+    
+    # Detalhamento por Atributo
+    st.markdown("#### Detalhamento por Atributo")
+    
+    for col in colunas_alvo:
+        if col in df.columns:
+            # Preparação dos dados
+            series = df[col].fillna("NÃO CLASSIFICADO")
+            counts = series.value_counts()
+            
+            qtd_preenchidos = df[col].notna().sum()
+            qtd_vazios = df[col].isna().sum()
+            perc_coluna = (qtd_preenchidos / total_skus) if total_skus > 0 else 0
+            
+            # Cor do status baseada na completude
+            cor_status = "🟢" if perc_coluna == 1.0 else "🟡" if perc_coluna > 0.5 else "🔴"
+            
+            with st.expander(f"{cor_status} {col} ({qtd_preenchidos} classificados / {qtd_vazios} pendentes)"):
+                
+                # Barra de Progresso Visual
+                st.progress(perc_coluna)
+                st.caption(f"**{perc_coluna:.1f}%** dos SKUs possuem {col}.")
+                
+                col_chart, col_table = st.columns([2, 1])
+                
+                with col_chart:
+                    st.markdown("**Top 10 Valores Encontrados:**")
+                    # Filtra apenas o top 10 para o gráfico não ficar gigante
+                    chart_data = counts.head(10).sort_values(ascending=True)
+                    st.bar_chart(chart_data, color="#004BDE", horizontal=True)
+                
+                with col_table:
+                    st.markdown("**Contagem Completa:**")
+                    # Tabela com todos os valores
+                    df_counts = counts.reset_index()
+                    df_counts.columns = [col, 'Qtd']
+                    st.dataframe(df_counts, use_container_width=True, height=300)
+
+# ==============================================================================
 # 6. INTERFACE PRINCIPAL
 # ==============================================================================
 
@@ -617,6 +679,8 @@ def main():
             # EXIBIÇÃO PERSISTENTE DOS RESULTADOS
             if st.session_state['class_concluido'] and st.session_state['class_df_final'] is not None:
                 st.success("Processamento Concluído!")
+                
+                # --- ÁREA DE DOWNLOADS ---
                 c1, c2 = st.columns(2)
                 
                 data_hoje = get_data_atual_str()
@@ -641,6 +705,11 @@ def main():
                 else:
                     c2.info("Sem alterações.")
                 
+                # --- NOVO: CHAMADA DAS ESTATÍSTICAS ---
+                st.markdown("---")
+                exibir_resumo_estatistico(st.session_state['class_df_final'], config_class['colunas'])
+                # --------------------------------------
+
                 if st.button("🔄 Limpar Classificador", key="limpar_class"):
                     st.session_state['class_concluido'] = False
                     st.session_state['class_df_final'] = None
