@@ -30,7 +30,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# CSS (Estética Visual - COM CORREÇÃO DE CONTRASTE DA TABELA)
+# CSS (Estética Visual - COM TEXTO BRANCO NA TABELA)
 st.markdown(
     """
     <style>
@@ -139,16 +139,37 @@ st.markdown(
             margin-bottom: 5px;
         }
 
-        /* --- CORREÇÃO DE CONTRASTE: DATAFRAME/TABELA --- */
-        /* Força fundo azul claro para garantir leitura do texto preto */
-        [data-testid="stDataFrame"], [data-testid="stTable"] {
-            background-color: #F0F8FF !important; /* AliceBlue */
-            border-radius: 8px;
-            padding: 10px;
+        /* --- CORREÇÃO VISUAL DA TABELA (st.table) --- */
+        [data-testid="stTable"] {
+            display: block;
+            overflow-x: auto;
         }
-        /* Tenta forçar a cor do texto das células caso o tema esteja sobrescrevendo */
-        [data-testid="stDataFrame"] div, [data-testid="stTable"] div {
-            color: #000000 !important; 
+        [data-testid="stTable"] table {
+            border-collapse: collapse; 
+            width: 100%;
+            border: 1px solid #004BDE;
+        }
+        
+        /* Cabeçalho da Tabela */
+        [data-testid="stTable"] thead th {
+            background-color: #004BDE !important; /* Fundo Azul Escuro */
+            color: #FFFFFF !important; /* Texto Branco */
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        /* Corpo da Tabela */
+        [data-testid="stTable"] tbody td {
+            background-color: transparent !important; /* Fundo Transparente */
+            color: #FFFFFF !important; /* Texto Branco Puro */
+            border-bottom: 1px solid #555555; /* Linha cinza escura para separar */
+        }
+        
+        /* Força a cor branca em qualquer elemento interno da célula */
+        [data-testid="stTable"] tbody td div, 
+        [data-testid="stTable"] tbody td span,
+        [data-testid="stTable"] tbody td p {
+             color: #FFFFFF !important;
         }
     </style>
     """,
@@ -559,7 +580,7 @@ def main():
                         other_cols = cols_found - {'Nome SKU'}
                         if other_cols:
                             html_others = ""
-                            for c in list(other_cols)[:5]: # Mostra só as 5 primeiras para não poluir
+                            for c in list(other_cols)[:5]: 
                                 html_others += f'<span class="badge-info">{c}</span>'
                             if len(other_cols) > 5:
                                 html_others += f'<span class="badge-info">... e mais {len(other_cols)-5}</span>'
@@ -568,7 +589,8 @@ def main():
                             st.markdown(html_others, unsafe_allow_html=True)
 
                         st.markdown("##### Amostra de Dados")
-                        st.dataframe(df_preview.head(), use_container_width=True)
+                        # USO DE st.table para forçar o CSS de contraste
+                        st.table(df_preview.head()) 
                     else:
                         st.error("Erro ao ler o arquivo para pré-visualização.")
                 st.divider()
@@ -688,7 +710,8 @@ def main():
                         st.success("Todas as colunas esperadas foram encontradas!")
 
                     st.markdown("##### Amostra de Dados (5 primeiras linhas)")
-                    st.dataframe(df_preview.head(), use_container_width=True)
+                    # USO DE st.table para forçar o CSS de contraste
+                    st.table(df_preview.head())
                 else:
                     st.error("Não foi possível ler este arquivo para pré-visualização.")
             st.divider()
