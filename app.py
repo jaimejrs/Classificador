@@ -30,7 +30,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# CSS (Estética Visual)
+# CSS (Estética Visual - COM CORREÇÃO DE CONTRASTE DA TABELA)
 st.markdown(
     """
     <style>
@@ -55,7 +55,6 @@ st.markdown(
             border-color: #004BDE !important;
             background-color: #FFFFFF !important; 
         }
-        
         div.stDownloadButton > button:hover {
             color: #FFFFFF !important;
             background-color: #004BDE !important;
@@ -138,6 +137,18 @@ st.markdown(
             margin-right: 5px;
             display: inline-block;
             margin-bottom: 5px;
+        }
+
+        /* --- CORREÇÃO DE CONTRASTE: DATAFRAME/TABELA --- */
+        /* Força fundo azul claro para garantir leitura do texto preto */
+        [data-testid="stDataFrame"], [data-testid="stTable"] {
+            background-color: #F0F8FF !important; /* AliceBlue */
+            border-radius: 8px;
+            padding: 10px;
+        }
+        /* Tenta forçar a cor do texto das células caso o tema esteja sobrescrevendo */
+        [data-testid="stDataFrame"] div, [data-testid="stTable"] div {
+            color: #000000 !important; 
         }
     </style>
     """,
