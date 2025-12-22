@@ -29,7 +29,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# CSS (Estética Visual)
+# CSS (Estética Visual Corrigida)
 st.markdown(
     """
     <style>
@@ -48,17 +48,33 @@ st.markdown(
             color: #014597; /* Azul Escuro */
         }
 
-        /* Botões de Download */
+        /* --- CORREÇÃO DOS BOTÕES --- */
+        
+        /* 1. Botões de Download (Fundo Branco, Texto Azul) */
         div.stDownloadButton > button {
             color: #004BDE !important;
             border-color: #004BDE !important;
             background-color: #FFFFFF !important; 
         }
-        
         div.stDownloadButton > button:hover {
             color: #FFFFFF !important;
             background-color: #004BDE !important;
+        }
+
+        /* 2. Botões de Ação - Classificar/Processar (Fundo Azul, Texto Branco) */
+        div.stButton > button {
+            color: #FFFFFF !important;
+            background-color: #004BDE !important;
             border-color: #004BDE !important;
+        }
+        div.stButton > button:hover {
+            background-color: #003AA6 !important; /* Azul mais escuro no hover */
+            border-color: #003AA6 !important;
+            color: #FFFFFF !important;
+        }
+        /* Foco no texto interno do botão para garantir contraste */
+        div.stButton > button p {
+            color: #FFFFFF !important;
         }
 
         /* Alertas de Alto Contraste */
