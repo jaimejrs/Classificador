@@ -1,10 +1,15 @@
-# config.py
 import os
 
+# --- CAMINHOS ---
 PASTA_DICIONARIOS = "dicionarios"
-SKU_PADRAO_FINAL = "Código Barras SKU"
+CAMINHO_ICONE = "assets/ícone.png"
+CAMINHO_LOGO = "assets/logo.png"
 
-# Configuração para o CLASSIFICADOR
+# --- CONSTANTES DE DADOS ---
+SKU_PADRAO_FINAL = "Código Barras SKU"
+COL_NOME_SKU = "Nome SKU"
+
+# --- CONFIGURAÇÃO DO CLASSIFICADOR ---
 CONFIG_CLASSIFICADOR = {
     "M.DIAS BRANCO": {
         "colunas": [
@@ -57,7 +62,7 @@ CONFIG_CLASSIFICADOR = {
     }
 }
 
-# Configuração para o EXTRATOR
+# --- CONFIGURAÇÃO DO EXTRATOR ---
 CONFIG_EXTRATOR = {
     "ALVOAR / BETANIA": {
         "sku_origem": "Código Barras SKU",
