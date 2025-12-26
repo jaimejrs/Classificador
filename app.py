@@ -4,6 +4,7 @@ import re
 import io
 import os
 import numpy as np
+import unicodedata
 from PIL import Image
 from datetime import datetime
 
@@ -282,6 +283,7 @@ CONFIG_EXTRATOR = {
 }
 
 SKU_PADRAO_FINAL = "Código Barras SKU"
+COL_NOME_SKU = "Nome SKU"  # Coluna padronizada para descrição
 
 # ==============================================================================
 # 3. FUNÇÕES UTILITÁRIAS COMUNS
@@ -345,6 +347,27 @@ def limpar_sku_cientifico(serie):
     serie_numerica = pd.to_numeric(serie, errors='coerce')
     serie_valida = serie_numerica.dropna()
     return serie_valida.astype(np.int64).astype(str)
+
+def padronizar_texto_extrator(valor):
+    """
+    Remove acentos, pontos e converte para maiúsculo.
+    Ex: 'Guaraná 1.5L' -> 'GUARANA 15L'
+    """
+    if pd.isna(valor):
+        return valor
+    
+    # 1. Converter para string e MAIÚSCULO
+    texto = str(valor).upper()
+    
+    # 2. Normalização Unicode (Remove acentos: Á -> A, Ç -> C)
+    # NFKD decompõe os caracteres (ex: 'á' vira 'a' + '´')
+    # encode ascii ignore remove os diacríticos
+    texto_normalizado = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('utf-8')
+    
+    # 3. Remover pontos (Solicitação específica)
+    texto_final = texto_normalizado.replace('.', '')
+    
+    return texto_final.strip()
 
 # ==============================================================================
 # 4. FUNÇÕES ESPECÍFICAS DO CLASSIFICADOR (ABA 1)
@@ -453,7 +476,9 @@ def processar_arquivos_extrator(files, config_industria):
     
     sku_input = config_industria["sku_origem"]
     cols_atributos = config_industria["colunas_atributos"]
-    colunas_alvo = [SKU_PADRAO_FINAL] + cols_atributos
+    
+    # 1. UPGRADE: Incluir 'Nome SKU' na lista de colunas alvo
+    colunas_alvo = [SKU_PADRAO_FINAL, COL_NOME_SKU] + cols_atributos
 
     progress_bar = st.progress(0)
     
@@ -471,6 +496,7 @@ def processar_arquivos_extrator(files, config_industria):
             df_raw[SKU_PADRAO_FINAL] = skus_corrigidos
             df_raw = df_raw.dropna(subset=[SKU_PADRAO_FINAL])
 
+            # Verifica quais colunas existem no arquivo
             colunas_existentes = [c for c in colunas_alvo if c in df_raw.columns]
             colunas_faltantes = [c for c in colunas_alvo if c not in df_raw.columns]
             
@@ -480,10 +506,12 @@ def processar_arquivos_extrator(files, config_industria):
                     "Encontradas": list(df_raw.columns) 
                 }
 
+            # Seleciona apenas as que existem e cria as faltantes com vazio
             df_selecionado = df_raw[colunas_existentes].copy()
             for col in colunas_faltantes:
                 df_selecionado[col] = pd.NA
             
+            # Reordena para ficar no padrão
             df_selecionado = df_selecionado[colunas_alvo]
             lista_dfs.append(df_selecionado)
             
@@ -498,10 +526,20 @@ def processar_arquivos_extrator(files, config_industria):
     if not lista_dfs:
         return None, ["Nenhum dado válido extraído."], debug_missing_cols
 
+    # Consolida tudo
     df_consolidado = pd.concat(lista_dfs, ignore_index=True)
     df_consolidado = df_consolidado.dropna(subset=[SKU_PADRAO_FINAL])
     df_consolidado = df_consolidado.drop_duplicates()
     
+    # 2. UPGRADE: Padronização de Texto (Maiúsculo, Sem Acentos, Sem Pontos)
+    # Aplica a função em todas as colunas de atributos + Nome SKU
+    cols_para_tratar = cols_atributos + [COL_NOME_SKU]
+    
+    for col in cols_para_tratar:
+        if col in df_consolidado.columns:
+            df_consolidado[col] = df_consolidado[col].apply(padronizar_texto_extrator)
+
+    # Verifica Duplicidades
     skus_conflitantes = df_consolidado[df_consolidado.duplicated(subset=[SKU_PADRAO_FINAL], keep=False)]
     
     return df_consolidado, skus_conflitantes, debug_missing_cols
@@ -812,10 +850,16 @@ def main():
                     nome_mestre = f"Mestre_Completo_{data_hoje}.xlsx"
                     arquivos_out[nome_mestre] = df_final_ext
                     
-                    # Fragmentar
+                    # Fragmentar (com inclusão do Nome SKU)
                     for col in config_ext["colunas_atributos"]:
                         if col in df_final_ext.columns:
-                            sub_df = df_final_ext[[SKU_PADRAO_FINAL, col]].dropna()
+                            # Agora selecionamos também o Nome SKU para os fragmentos
+                            cols_fragmento = [SKU_PADRAO_FINAL, COL_NOME_SKU, col]
+                            # Verifica se o Nome SKU existe mesmo (segurança)
+                            cols_fragmento = [c for c in cols_fragmento if c in df_final_ext.columns]
+                            
+                            sub_df = df_final_ext[cols_fragmento].dropna(subset=[col])
+                            
                             if not sub_df.empty:
                                 sub_df = sub_df[sub_df[col].astype(str).str.strip() != ""]
                             
