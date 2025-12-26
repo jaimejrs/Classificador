@@ -20,7 +20,7 @@ try:
         icone_img = Image.open(config.CAMINHO_ICONE)
     else:
         # Debug: Mostra no terminal se não achar o arquivo
-        print(f"AVISO: Ícone não encontrado no caminho: {config.CAMINHO_ICONE}")
+        print(f"⚠️ AVISO: Ícone não encontrado no caminho: {config.CAMINHO_ICONE}")
 except Exception as e:
     print(f"Erro ao abrir ícone: {e}")
 
@@ -33,9 +33,10 @@ except Exception:
 
 st.set_page_config(
     page_title="Suíte de Dados - Classificador & Extrator",
-    page_icon=icone_img, # Aqui ele usa a imagem carregada
+    page_icon=icone_img, 
     layout="wide"
 )
+
 # APLICA O CSS DO MÓDULO styles.py
 styles.aplicar_css_personalizado()
 
@@ -44,9 +45,9 @@ def main():
         st.sidebar.image(logo_img, use_column_width=True)
     st.sidebar.markdown("---") 
     
-    st.title("Classificador de Prods")
+    st.title("🏭 Central de Dados")
     
-    tab_classificador, tab_extrator = st.tabs(["Classificador", "Extrator & Fragmentador"])
+    tab_classificador, tab_extrator = st.tabs(["🧩 Classificador Inteligente", "🗃️ Extrator & Fragmentador"])
 
     # -------------------------------------------------------------------------
     # ABA 1: CLASSIFICADOR
@@ -245,9 +246,10 @@ def main():
                     nome_mestre = f"Mestre_Completo_{data_hoje}.xlsx"
                     arquivos_out[nome_mestre] = df_final_ext
                     
+                    # CORREÇÃO: Removido COL_NOME_SKU da lista de colunas do fragmento
                     for col in config_ext["colunas_atributos"]:
                         if col in df_final_ext.columns:
-                            cols_fragmento = [config.SKU_PADRAO_FINAL, config.COL_NOME_SKU, col]
+                            cols_fragmento = [config.SKU_PADRAO_FINAL, col] # APENAS SKU E O ATRIBUTO
                             cols_fragmento = [c for c in cols_fragmento if c in df_final_ext.columns]
                             
                             sub_df = df_final_ext[cols_fragmento].dropna(subset=[col])
@@ -313,6 +315,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
