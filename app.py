@@ -11,17 +11,17 @@ import utils
 # ==============================================================================
 # CONFIGURAÇÃO INICIAL E ASSETS
 # ==============================================================================
-icone_img = None
+ícone_img = None
 logo_img = None
 try:
-    if os.path.exists(config.CAMINHO_ICONE): icone_img = Image.open(config.CAMINHO_ICONE)
+    if os.path.exists(config.CAMINHO_ICONE): ícone_img = Image.open(config.CAMINHO_ICONE)
     if os.path.exists(config.CAMINHO_LOGO): logo_img = Image.open(config.CAMINHO_LOGO)
 except Exception:
     pass
 
 st.set_page_config(
     page_title="Suíte de Dados - Classificador & Extrator",
-    page_icon=icone_img, 
+    page_icon=ícone_img, 
     layout="wide"
 )
 
@@ -33,9 +33,9 @@ def main():
         st.sidebar.image(logo_img, use_column_width=True)
     st.sidebar.markdown("---") 
     
-    st.title("🏭 Central de Dados")
+    st.title("Classificador de Prods")
     
-    tab_classificador, tab_extrator = st.tabs(["🧩 Classificador Inteligente", "🗃️ Extrator & Fragmentador"])
+    tab_classificador, tab_extrator = st.tabs(["Classificador", "Extrator & Fragmentador"])
 
     # -------------------------------------------------------------------------
     # ABA 1: CLASSIFICADOR
@@ -302,3 +302,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
