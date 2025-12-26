@@ -158,7 +158,7 @@ def processar_arquivos_extrator(files, config_industria):
     debug_missing_cols = {} 
     sku_input = config_industria["sku_origem"]
     cols_atributos = config_industria["colunas_atributos"]
-    # UPGRADE 1: Inclusão do Nome SKU
+    # Garante que o Nome SKU esteja no mestre
     colunas_alvo = [SKU_PADRAO_FINAL, COL_NOME_SKU] + cols_atributos
 
     progress_bar = st.progress(0)
@@ -199,7 +199,7 @@ def processar_arquivos_extrator(files, config_industria):
     df_consolidado = df_consolidado.dropna(subset=[SKU_PADRAO_FINAL])
     df_consolidado = df_consolidado.drop_duplicates()
     
-    # UPGRADE 2: Sanitização
+    # Sanitização (Maiúsculo, Sem Acentos, Sem Pontos)
     cols_para_tratar = cols_atributos + [COL_NOME_SKU]
     for col in cols_para_tratar:
         if col in df_consolidado.columns:
