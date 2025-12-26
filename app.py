@@ -14,20 +14,26 @@ import utils
 icone_img = None
 logo_img = None
 
-if os.path.exists("assets/ícone.png"):
-    icone_img = Image.open("assets/ícone.png")
-elif os.path.exists("assets/icone.png"):
-    icone_img = Image.open("assets/icone.png")
-else:
-    print("AVISO: Arquivo de ícone não encontrado na pasta assets/")
+# Tenta carregar o ícone usando o caminho exato do config
+try:
+    if os.path.exists(config.CAMINHO_ICONE):
+        icone_img = Image.open(config.CAMINHO_ICONE)
+    else:
+        # Debug: Mostra no terminal se não achar o arquivo
+        print(f"AVISO: Ícone não encontrado no caminho: {config.CAMINHO_ICONE}")
+except Exception as e:
+    print(f"Erro ao abrir ícone: {e}")
 
 # Tenta carregar a logo
-if os.path.exists(config.CAMINHO_LOGO):
-    logo_img = Image.open(config.CAMINHO_LOGO)
+try:
+    if os.path.exists(config.CAMINHO_LOGO):
+        logo_img = Image.open(config.CAMINHO_LOGO)
+except Exception:
+    pass
 
 st.set_page_config(
     page_title="Suíte de Dados - Classificador & Extrator",
-    page_icon=icone_img, # Se for None, o Streamlit usa o ícone padrão
+    page_icon=icone_img, # Aqui ele usa a imagem carregada
     layout="wide"
 )
 # APLICA O CSS DO MÓDULO styles.py
@@ -307,5 +313,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
