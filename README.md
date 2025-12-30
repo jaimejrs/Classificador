@@ -3,13 +3,13 @@
 > **Versão:** 2.0.0  
 > **Stack:** Python, Streamlit, Pandas, Regex  
 > **Status:** Produção  
-> **Foco:** Governança de Cadastros, Padronização de SKUs e ETL Automatizado.
+> **Foco:** Governança de Cadastros, Padronização de SKUs e Automação do Processo.
 
 ---
 
 ## 🌐 Acesso Rápido (Web)
 
-Para utilização imediata da ferramenta, sem a necessidade de instalações técnicas ou uso de terminal, acesse o ambiente de produção em nuvem:
+Para utilização imediata da ferramenta, sem a necessidade de instalações ou uso de terminal, acesse o ambiente de produção em nuvem:
 
 ### [🔗 CLIQUE AQUI PARA ACESSAR O SISTEMA](https://classificadorscanntech.streamlit.app/)
 *(https://classificadorscanntech.streamlit.app/)*
